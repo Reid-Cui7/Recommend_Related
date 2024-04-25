@@ -86,16 +86,49 @@ def get_train_data(input_file, score_thr):
         #     print(sorted_neg_list)
     return train_data
 
+
+def get_graph_from_data(input_file, score_thr):
+    """
+    Return: {userA: {itemb:1, itemc:1}, itemb: {userA:1, userB:1}, ...}
+    """
+    if not os.path.exists(input_file):
+        return {}
+    linenum = 0
+    graph = {}
+    with open(input_file, 'r') as f:
+        for line in f.readlines():
+            if linenum == 0:
+                linenum += 1
+                continue
+            item = line.strip().split(',')
+            if len(item) < 3:
+                continue
+            userid, itemid, rating = item[0], "item_" + item[1], item[2]
+            if float(rating) < score_thr:
+                continue
+            if userid not in graph:
+                graph[userid] = {}
+            graph[userid][itemid] = 1
+            if itemid not in graph:
+                graph[itemid] = {}
+            graph[itemid][userid] = 1
+    return graph
+
+
+
 if __name__ == '__main__':
-    item_dict = get_item_info("/Users/mac/Codes/Projects/Dataset/mksz297/movies.csv")
-    print(len(item_dict))
-    print(item_dict['1'])
-    print(item_dict['11'])
+    # item_dict = get_item_info("/Users/mac/Codes/Projects/Dataset/mksz297/movies.csv")
+    # print(len(item_dict))
+    # print(item_dict['1'])
+    # print(item_dict['11'])
 
-    score_dict = get_ave_score("/Users/mac/Codes/Projects/Dataset/mksz297/ratings.csv")
-    print(len(score_dict))
-    print(score_dict['31'])
+    # score_dict = get_ave_score("/Users/mac/Codes/Projects/Dataset/mksz297/ratings.csv")
+    # print(len(score_dict))
+    # print(score_dict['31'])
 
-    train_data = get_train_data("/Users/mac/Codes/Projects/Dataset/mksz297/ratings.csv", 4.0)
-    print(len(train_data))
-    print(train_data[:50])
+    # train_data = get_train_data("/Users/mac/Codes/Projects/Dataset/mksz297/ratings.csv", 4.0)
+    # print(len(train_data))
+    # print(train_data[:50])
+
+    graph = get_graph_from_data(r"C:/Users/Bean1777/Documents/Codes/Daily/Data/ratings.csv", 4.0)
+    print(graph['1'])
