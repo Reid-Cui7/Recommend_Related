@@ -52,11 +52,58 @@ def process_dis_feature(feature_str, df_train, df_test):
     df_test.loc[:,feature_str] = df_test.loc[:,feature_str].apply(dis_to_feature, args=(feature_dict,))
     return len(feature_dict)
 
+def list_trans(input_dict):
+    output_list = [0] * 5
+    key_list = ["min", "25%", "50%", "75%", "max"]
+    for index in range(len(key_list)):
+        fix_key = key_list[index]
+        if fix_key not in input_dict:
+            raise ValueError("{} not in dict".format(fix_key))
+            sys.exit()
+        output_list[index] = input_dict[fix_key]
+    return output_list
+        
 
-def ana_train_data(input_train_data, input_test_data, out_train_data, out_test_data):
+def con_to_feature(x, feature_list):
+    feature_len = len(feature_list) - 1
+    result = [0] * feature_len
+    for index in range(feature_len):
+        if x >= feature_list[index] and x <= feature_list[index+1]:
+            result[index] = 1
+            return ",".join(str[ele] for ele in result)
+    return ",".join(str[ele] for ele in result)
+
+def process_con_feature(feature_str, df_train, df_test):
+    origin_dict = df_train.loc[:,feature_str].describe().to_dict()
+    feature_list = list_trans(origin_dict)
+    df_train.loc[:,feature_str] = df_train.loc[:,feature_str].apply(con_to_feature, args=(feature_list,))
+    df_test.loc[:,feature_str] = df_test.loc[:,feature_str].apply(con_to_feature, args=(feature_list,))
+    return len(feature_list) - 1
+
+def output_file(df_in, out_file):
+    with open(out_file, "w") as f:
+        for index, row in df_in.iterrows():
+            f.write("{}\n".format(row.to_csv(header=False, index=False)))
+
+
+def ana_train_data(input_train_data, input_test_data, out_train_file, out_test_file):
     train_data_df, test_data_df = get_input(input_train_data, input_test_data)
-    process_label_feature("label", train_data_df)
-    process_label_feature("label", test_data_df)
+    label_feature_str = "label"
+    dis_feature_list = ["workclass", "education", "marital-status", "occupation", "relationship", "race", "sex", "native-country"]
+    con_feature_list = ["age", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
+    process_label_feature(label_feature_str, train_data_df)
+    process_label_feature(label_feature_str, test_data_df)
+    dis_feature_num = 0
+    con_feature_num = 0
+    for dis_feature in dis_feature_list:
+        dis_feature_num += process_dis_feature(dis_feature, train_data_df, test_data_df)
+    for con_feature in con_feature_list:
+        con_feature_num += process_con_feature(con_feature, train_data_df, test_data_df)
+    output_file(train_data_df, out_train_file)
+    output_file(test_data_df, out_test_file)
+
+
+
 
 
 if __name__ == "__main__":
