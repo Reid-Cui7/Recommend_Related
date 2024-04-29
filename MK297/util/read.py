@@ -115,6 +115,61 @@ def get_graph_from_data(input_file, score_thr):
     return graph
 
 
+def get_item_cate(ave_score, input_file, topk=10):
+    if not os.path.exists(input_file):
+        return {}, {}
+    linenum = 0
+    item_cate = {}
+    record = {}
+    cate_item_sort = {}
+    with open(input_file, 'r') as f:
+        for line in f.readlines():
+            if linenum == 0:
+                linenum += 1
+                continue
+            item = line.strip().split(',')
+            if len(item) < 3:
+                continue
+            itemid, cate_str = item[0], item[-1]
+            cate_list = cate_str.strip().split('|')
+            ratio = round(1 / len(cate_list), 3)
+            if itemid not in item_cate:
+                item_cate[itemid] = {}
+            for cate in cate_list:
+                    item_cate[itemid][cate] = ratio
+    
+    for itemid in item_cate:
+        for cate in item_cate[itemid]:
+            if cate not in record:
+                record[cate] = {}
+            itemid_rating_score = ave_score.get(itemid, 0.0)
+            record[cate][itemid] = itemid_rating_score
+    for cate in record:
+        if cate not in cate_item_sort:
+            cate_item_sort[cate] = []
+        for pair in sorted(record[cate].items(), key=lambda x: x[1], reverse=True)[:topk]:
+            # cate_item_sort[cate].append(pair[0] + "_" + str(pair[1]))
+            cate_item_sort[cate].append(pair[0])
+    return item_cate, cate_item_sort
+
+
+def get_latest_timestamp(input_file):
+    if not os.path.exists(input_file):
+        return
+    linenum = 0
+    latest = 0
+    with open(input_file, 'r') as f:
+        for line in f.readlines():
+            if linenum == 0:
+                linenum += 1
+                continue
+            item = line.strip().split(',')
+            if len(item) < 4:
+                continue
+            timestamp = int(item[3])
+            if timestamp > latest:
+                latest = timestamp
+    return latest
 
 if __name__ == '__main__':
     # item_dict = get_item_info("/Users/mac/Codes/Projects/Dataset/mksz297/movies.csv")
@@ -130,5 +185,12 @@ if __name__ == '__main__':
     # print(len(train_data))
     # print(train_data[:50])
 
-    graph = get_graph_from_data(r"C:/Users/Bean1777/Documents/Codes/Daily/Data/ratings.csv", 4.0)
-    print(graph['1'])
+    # graph = get_graph_from_data(r"C:/Users/Bean1777/Documents/Codes/Daily/Data/ratings.csv", 4.0)
+    # print(graph['1'])
+
+    ave_score = get_ave_score("/Users/mac/Codes/Projects/Dataset/mksz297/ratings.csv")
+    print(len(ave_score))
+    print(ave_score['3'])
+    item_cate, cate_item_sort = get_item_cate(ave_score, "/Users/mac/Codes/Projects/Dataset/mksz297/movies.csv")
+    print(item_cate["1"])
+    print(cate_item_sort["Children"])
