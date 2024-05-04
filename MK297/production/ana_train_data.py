@@ -85,22 +85,59 @@ def output_file(df_in, out_file):
         for index, row in df_in.iterrows():
             f.write("{}\n".format(row.to_csv(header=False, index=False)))
 
+def add(str_one, str_two):
+    list_one = str_one.split(",")
+    list_two = str_two.split(",")
+    list_one_len = len(list_one)
+    list_two_len = len(list_two)
+    return_list = [0] * (list_one_len * list_two_len)
+    try:
+        index_one = list_one.index('1')
+    except:
+        index_one = 0
+    try:
+        index_two = list_two.index('1')
+    except:
+        index_two = 0
+    return_list[index_one * list_two_len + index_two] = 1
+    return ",".join(str[ele] for ele in return_list)
 
-def ana_train_data(input_train_data, input_test_data, out_train_file, out_test_file):
+def combine_feature(feature_one, feature_two, new_feature, train_data_df, test_data_df, feature_num_dict):
+    train_data_df[new_feature].train_data_df.apply(lambda row: add(row[feature_one], row[feature_two]))
+    test_data_df[new_feature].test_data_df.apply(lambda row: add(row[feature_one], row[feature_two]))
+    if feature_one not in feature_num_dict:
+        raise ValueError("{} not in dict".format(feature_one))
+        sys.exit()
+    return feature_num_dict[feature_one] * feature_num_dict[feature_two]
+
+def ana_train_data(input_train_data, input_test_data, out_train_file, out_test_file, feature_num_file):
     train_data_df, test_data_df = get_input(input_train_data, input_test_data)
     label_feature_str = "label"
     dis_feature_list = ["workclass", "education", "marital-status", "occupation", "relationship", "race", "sex", "native-country"]
     con_feature_list = ["age", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
     process_label_feature(label_feature_str, train_data_df)
     process_label_feature(label_feature_str, test_data_df)
+    index_list = ['age', 'workclass', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', \
+        'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country']
     dis_feature_num = 0
     con_feature_num = 0
+    feature_num_dict = {}
     for dis_feature in dis_feature_list:
-        dis_feature_num += process_dis_feature(dis_feature, train_data_df, test_data_df)
+        tmp_feature_num += process_dis_feature(dis_feature, train_data_df, test_data_df)
+        dis_feature_num += tmp_feature_num
+        feature_num_dict[dis_feature] = tmp_feature_num
     for con_feature in con_feature_list:
-        con_feature_num += process_con_feature(con_feature, train_data_df, test_data_df)
+        tmp_feature_num += process_con_feature(con_feature, train_data_df, test_data_df)
+        con_feature_num += tmp_feature_num
+        feature_num_dict[con_feature] = tmp_feature_num
+    new_feature_len = combine_feature("age", "workclass", "age_workclass", train_data_df, test_data_df, feature_num_dict)
+    new_feature_len_2 = combine_feature("capital-gain", "education", "cap_edu", train_data_df, test_data_df, feature_num_dict)
+    train_data_df = train_data_df.reindex(columns=index_list + ["age_workclass", "cap_edu", "label"])
+    test_data_df = test_data_df.reindex(columns=index_list + ["age_workclass", "cap_edu", "label"])
     output_file(train_data_df, out_train_file)
     output_file(test_data_df, out_test_file)
+    with open(feature_num_file, "w") as f:
+        f.write("feature_num=" + str(dis_feature_num + con_feature_num + new_feature_len))
 
 
 

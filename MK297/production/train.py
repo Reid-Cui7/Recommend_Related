@@ -1,9 +1,12 @@
+import sys
+sys.path.append("../util")
 import numpy as np
+import get_feature_num
 from sklearn.linear_model import LogisticRegressionCV as LRCV
 from sklearn.externals import joblib
 
-def train_lr_model(train_file, model_coef, model_file):
-    total_feature_num = 118
+def train_lr_model(train_file, model_coef, model_file, feature_num_file):
+    total_feature_num = get_feature_num(feature_num_file)
     train_label = np.genfromtxt(train_file, delimiter=',', dtype=np.int32, usecols=-1)
     feature_list = range(total_feature_num)
     train_feature = np.genfromtxt(train_file, delimiter=',', dtype=np.float32, usecols=feature_list)
